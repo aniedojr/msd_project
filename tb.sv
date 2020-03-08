@@ -1,7 +1,7 @@
 
 //////////////////////////////////////////////////////////////////
 // tb.sv - Testbench for cache
-// Team Members: Kaviya Ramachandran, Saurabh Chavan, Ariel Niedo
+// 
 // Description:
 // Reads a trace file line by line.
 // Each line has an access type (0=read, 1=write, 2=invalidate) and 32-bit address.
