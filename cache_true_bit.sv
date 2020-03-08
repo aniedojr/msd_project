@@ -1,9 +1,8 @@
-// Code your design here
-  
+
 ////////////////////////////////////////////////////////////////////////
-// cache.sv
+// cache_true_bit.sv
 //
-// Team Members: Kaviya Ramachandran, Saurabh Chavan, Ariel Niedo
+// 
 //
 // Description:
 // This module takes the provided input address trace as its input.
