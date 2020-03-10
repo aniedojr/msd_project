@@ -1,6 +1,6 @@
- 
+
 ////////////////////////////////////////////////////////////////////////
-// cache.sv
+// cache_1bit.sv
 //
 // 
 //
@@ -85,7 +85,7 @@ begin
   {tag, index, byte_select} = Hex_address;
 
   // Hit Ratio =  HitNumber of cache hits / Number of cache accesses
- // cache_hit_ratio = real'(number_of_cache_hits)/(real'(total_number_of_cache_accesses))*100.00;
+  
   j = index;
   $display($time,"INSIDE THE ALWAYS BLOCK  AND ACCESS TYPE= %d//%d//%b",Access_type,j,index);
 
