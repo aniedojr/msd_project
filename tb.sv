@@ -1,7 +1,7 @@
 
 //////////////////////////////////////////////////////////////////
 // tb.sv - Testbench for cache
-// 
+// Team Members: Kaviya Ramachandran, Saurabh Chavan, Ariel Niedo
 // Description:
 // Reads a trace file line by line.
 // Each line has an access type (0=read, 1=write, 2=invalidate) and 32-bit address.
@@ -82,7 +82,7 @@ final begin
   Number of evictions: 192
   Number of writebacks: 64
   */
-
+  cache.cache_hit_ratio = real'(cache.number_of_cache_hits)/(real'(cache.number_of_cache_hits+cache.number_of_cache_misses))*100.00;
 $display("CACHE PARAMETERS");
 $display("Number of sets: %0d", cache.num_sets);
 $display("Associativity: %0d",  cache.num_ways);
@@ -104,6 +104,5 @@ $display("Number of evictions: %0d", cache.number_of_evictions);
 $display("Number of writebacks: %0d", cache.number_of_writebacks);
 end
 
-// instantiate cache
 
 endmodule
