@@ -1,4 +1,5 @@
-
+// Code your design here
+  
 ////////////////////////////////////////////////////////////////////////
 // cache_true_bit.sv
 //
@@ -20,7 +21,7 @@ module cache
                                           //                        1 = 1-bit LRU
    )(
     input clk,
-    input Access_type,              // read=0, write=1, invalidate=2
+    input logic[1:0] Access_type,              // read=0, write=1, invalidate=2
     input [31:0] Hex_address              // requested address
 );
 
@@ -68,12 +69,17 @@ logic chit_r;
 logic chit_w;
 logic mflag_r; 
 logic mflag_w; 
+logic mflag_i;
 int rep_r, rep_w;
 int temp_r, k_r;
 int temp_w, k_w;
-int sum_r, sum_w;
+int temp_i, k_i;
+bit sum_r, sum_w;
 int rep_fr, rep_fw;
-int mindex_r,mindex_w;
+int mindex_r,mindex_w, mindex_i;
+bit valid_orr, valid_andr;
+bit valid_orw, valid_andw;
+int z_r,z_w;
 
   always@(posedge clk)
 begin
@@ -108,6 +114,9 @@ function void cache_read();
   mflag_r=0;
   chit_r=1;
   rep_fr=0;
+  valid_orr=1;
+  valid_andr=1;
+  sum_r=0;
 $display($time,"INSIDE THE READ ACCESS  AND ACCESS TYPE= %d",Access_type);
 number_of_cache_reads++; 
 	//first we will check for cache hit
@@ -143,7 +152,12 @@ number_of_cache_reads++;
 			break;
 		end
 	   end
-  if((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))
+  //((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))
+  for(i=0; i<num_ways; i++)
+                begin
+                  valid_orr=valid_orr && valid[j][i];
+                 end
+  if(valid_orr==0)
 	begin
 		$display($time,"INSIDE READ MISS CHECK VALID ZERO" );
 		 rep_fr=1;
@@ -156,7 +170,10 @@ number_of_cache_reads++;
 				valid[j][i]=1;
 				dirty[j][i]=0;
 				tag_array[j][i]=tag;
-				sum_r=aj[j][0]+aj[j][1]+aj[j][2]+aj[j][3]+aj[j][4]+aj[j][5]+aj[j][6]+aj[j][7]; //CHANGE FOR ASSOCIATIVITY
+				for (z_r=0;z_r<num_ways;z_r++)
+				begin
+				sum_r=aj[j][z_r] || sum_r; //CHANGE FOR ASSOCIATIVITY
+				end
 				if(sum_r==0)
 				begin
 					$display($time,"FIRST LOCATION FILLED//VERY FIRST CACHE MISS//READ//%d",sum_w );
@@ -198,9 +215,14 @@ number_of_cache_reads++;
       $display($time,"REPLACEMENT CANNOT BE TRIGGERED for READ");
     end
 	else begin
-	if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1)) //CHANGES
-	begin
-		if(chit_r==1)
+	//if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1)) //CHANGES
+	//begin
+	for(i=0; i<num_ways; i++)
+                begin
+					 valid_andr=valid_andr && valid[j][i];
+                end
+		//if(chit_r==1)	
+        if(valid_andr==1)
 		begin
           $display($time,"REPLACEMENT POLICY STARTED//%d//%d//%d", rep_r,aj[j][num_ways-1],num_ways );
 	          rep_r= aj[j][num_ways-1]-1;
@@ -245,7 +267,6 @@ number_of_cache_reads++;
 		end
 
 	end
-	end
 
 endfunction
 
@@ -253,6 +274,9 @@ function void cache_write();
   mflag_w=0;
   chit_w=1;
   rep_fw=0;
+  valid_orw=1;
+  valid_andw=1;
+  sum_w=0;
 $display("INSIDE THE WRITE BLOCK  AND ACCESS TYPE= %d",Access_type);
 number_of_cache_writes++;
 
@@ -298,8 +322,14 @@ number_of_cache_writes++;
 	end 
   end
 // THE WRITE CACHE MISS BLOCK FOR FILLING ZERO COMPARTMENTS		
-  if((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))	
-begin
+  //if((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))	
+	//begin
+	for(i=0; i<num_ways; i++)
+                begin
+                  valid_orw=valid_orw && valid[j][i];                  
+                end
+  if(valid_orw==0)
+  begin
   $display($time,"INSIDE WRITE MISS CHECK VALID ZERO" );
 		 rep_fw=1;
 		for(i=0;i<num_ways;i++)
@@ -312,7 +342,10 @@ begin
 			valid[j][i]=1;
 			dirty[j][i]=1;
 			tag_array[j][i]=tag;
-			sum_w=aj[j][0]+aj[j][1]+aj[j][2]+aj[j][3]+aj[j][4]+aj[j][5]+aj[j][6]+aj[j][7];
+			for (z_w=0;z_w<num_ways;z_w++)
+				begin
+				sum_w=aj[j][z_w] || sum_w; //CHANGE FOR ASSOCIATIVITY
+			end
 			if(sum_w==0)
               begin
                 $display($time,"FIRST LOCATION FILLED//VERY FIRST CACHE MISS//WRITE//%d",sum_w );
@@ -360,7 +393,13 @@ end
     end
   	else
    	 begin 
-    if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1))
+    //if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1))
+	//begin
+	for(i=0; i<num_ways; i++)
+                begin
+                  valid_andw=valid_andw && valid[j][i];                  
+                end
+	if(valid_andw==1)
 	begin
 	$display($time,"REPLACEMENT TRIGGERED//CACHE MISS//WRITE" );
       if(chit_w==1)
@@ -406,21 +445,46 @@ end
 	end
 end
      end
+
 endfunction
 
 function void cache_invalidate();
-
+number_of_invalidates++;
+mflag_i=0;
 for(i=0;i<num_ways;i++)
-		begin
+begin
 			if(tag_array[j][i]==tag)
 			begin
 				valid[j][i]=0;
 				dirty[j][i]=0;
 				tag_array[j][i]=0;
+              $display($time," TAG MATCH INVALIDATE//%d", i );
+//RECENCY ARRAY FILLING STARTED FOR FIRST LOCATION MISS
+              for(k_i=0; k_i<num_ways;k_i++)
+						begin
+                          if(aj[j][k_i]==(i+1))
+								begin
+                                  $display($time," NOT A FIRST LOCATION FILLED//CACHE MISS//WRITE" );
+									mflag_i=1;
+									mindex_i=k_i;
+                                  $display($time,"BEFORE BREAK HAPPENS//%d//%d",mindex_i,k_i );
+								end
+                        end
+						if(mflag_i==1)
+						begin
+								temp_i=mindex_i;
+								$display($time,"RECENCY ARRAY//%d//%d//%d",temp_i,k_i,mindex_i);
+								for(k_i=0; k_i<mindex_i;k_i++)
+								begin
+									aj[j][temp_i]=aj[j][temp_i-1];
+									temp_i--;
+                                end
+								aj[j][0]=0;
+                              $display($time,"BREAK//CACHE MISS//WRITE//%d//%d//%d//%d//%d//%d//%d//%d", aj[j][0], aj[j][1], aj[j][2], aj[j][3], aj[j][4], aj[j][5], aj[j][6], aj[j][7]);
+						end
+						break;
 			end
-			break;
-		end
-
+end
 endfunction
 
 endmodule
