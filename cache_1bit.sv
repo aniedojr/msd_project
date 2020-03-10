@@ -1,7 +1,9 @@
  
 ////////////////////////////////////////////////////////////////////////
-// cache_1bit.sv
-//  
+// cache.sv
+//
+// 
+//
 // Description:
 // This module takes the provided input address trace as its input.
 // It  will implement the workings of the cache. 
@@ -18,7 +20,7 @@ module cache
                                           //                        1 = 1-bit LRU
    )(
     input clk,
-    input Access_type,              // read=0, write=1, invalidate=2
+    input logic[1:0] Access_type,              // read=0, write=1, invalidate=2
     input [31:0] Hex_address              // requested address
 );
 
@@ -74,6 +76,8 @@ int sum_r, sum_w;
 bit rep_fr, rep_fw;
 int mindex_r,mindex_w;
 bit MRUAND_r,MRUAND_w;
+bit valid_orr, valid_andr;
+bit valid_orw, valid_andw;
 
   always@(posedge clk)
 begin
@@ -84,6 +88,7 @@ begin
  // cache_hit_ratio = real'(number_of_cache_hits)/(real'(total_number_of_cache_accesses))*100.00;
   j = index;
   $display($time,"INSIDE THE ALWAYS BLOCK  AND ACCESS TYPE= %d//%d//%b",Access_type,j,index);
+
 
 if(Access_type==0) //read trace access type
 begin 
@@ -108,6 +113,9 @@ function void cache_read();
   chit_r=1;
   rep_fr=0;
   MRUAND_r = 1;
+  valid_orr=1;
+  valid_andr=1;
+
 $display($time,"INSIDE THE READ ACCESS  AND ACCESS TYPE= %d",Access_type);
 number_of_cache_reads++; 
 /////////11111111111//////////
@@ -125,7 +133,12 @@ number_of_cache_reads++;
 		end
 	   end
 ////////////22222222222///////////	   
-  if((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))
+  //if((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))
+  for(i=0; i<num_ways; i++)
+                begin
+                  valid_orr=valid_orr && valid[j][i];
+                 end
+  if(valid_orr==0)
 	begin
 		$display($time,"INSIDE READ MISS CHECK VALID ZERO" );
 		 rep_fr=1; //FLAG FOR NOT EXECUTING THE CACHE MISS BLOCK REPLACEMENT BLOCK AS CACHE HIT WAS ACCESSED
@@ -149,7 +162,12 @@ number_of_cache_reads++;
 		//REPLACEMENT POLICY GETS TRIGGERED IF (rep_fr==1)
 		else if(rep_fr==0)
 		begin
-			if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1) )
+			/*if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1) )*/
+              for(i=0; i<num_ways; i++)
+                begin
+					 valid_andr=valid_andr && valid[j][i];
+                end
+          if(valid_andr==1)
 			begin
 			$display($time,"REPLACEMENT POLICY TRIGGERED FOR READ//%b", rep_fr );
 			//SCANNING ALL MRU BITS TO SEE IF THE MRU BITS ARE SET TO 1
@@ -237,6 +255,8 @@ function void cache_write();
   chit_w=1;
   rep_fw=0;
   MRUAND_w=1;
+  valid_orw=1;
+  valid_andw=1;
 $display("INSIDE THE WRITE BLOCK  AND ACCESS TYPE= %d",Access_type);
 number_of_cache_writes++;
 //CACHE WRITE ARE CHECKED FIRST
@@ -256,8 +276,13 @@ number_of_cache_writes++;
 		end
 	   end
 ////////222222222/////////	   
-  if((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))
-	begin
+  //if((valid[j][0]==0) || (valid[j][1]==0) || (valid[j][2]==0) || (valid[j][3]==0) || (valid[j][4]==0) || (valid[j][5]==0) || (valid[j][6]==0) || (valid[j][7]==0))
+    for(i=0; i<num_ways; i++)
+                begin
+                  valid_orw=valid_orw && valid[j][i];                  
+                end
+  if(valid_orw==0)
+		begin
 		$display($time,"INSIDE WRITE MISS CHECK VALID ZERO" );
 		 rep_fw=1; //FLAG FOR NOT EXECUTING THE CACHE MISS BLOCK REPLACEMENT BLOCK AS CACHE HIT WAS ACCESSED
 		for(i=0;i<num_ways;i++)
@@ -280,7 +305,12 @@ number_of_cache_writes++;
 		//REPLACEMENT POLICY GETS TRIGGERED IF (rep_fw==1)
 		else if(rep_fw==0)
 		begin
-			if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1))
+			//if((valid[j][0]==1) && (valid[j][1]==1) && (valid[j][2]==1) && (valid[j][3]==1) && (valid[j][4]==1) && (valid[j][5]==1) && (valid[j][6]==1) && (valid[j][7]==1))
+          for(i=0; i<num_ways; i++)
+                begin
+                  valid_andw=valid_andw && valid[j][i];                  
+                end
+  if(valid_andw==1)
 			begin
 		$display($time,"REPACEMENT POLICY TRIGGERED FOR WRITE//%b", rep_fw );
 			//SCANNING ALL MRU BITS TO SEE IF THE MRU BITS ARE SET TO 1
@@ -362,7 +392,8 @@ number_of_cache_writes++;
 endfunction
 
 function void cache_invalidate();
-
+  
+    number_of_invalidates++;
 for(i=0;i<num_ways;i++)
 		begin
 			if(tag_array[j][i]==tag)
