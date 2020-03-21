@@ -45,9 +45,9 @@ bit 			dirty				[num_sets][num_ways];
 bit [TAG_SIZE-1:0]		tag_array	[num_sets][num_ways];
 int 				aj		[num_sets][num_ways];
 // requested address
-logic [TAG_SIZE-1:0]		tag;
-logic [INDEX_SIZE-1:0] 		index;
-logic [BYTE_SELECT_SIZE-1:0]	byte_select;
+bit [TAG_SIZE-1:0]		tag;
+bit [INDEX_SIZE-1:0] 		index;
+bit [BYTE_SELECT_SIZE-1:0]	byte_select;
 
 // statistics
 int total_number_of_cache_accesses = 0;	// Total number of cache accesses
@@ -380,6 +380,7 @@ number_of_cache_writes++;
                   	valid[j][mindex_w]=1;
                   	dirty[j][mindex_w]=1;
 					mru[j][mindex_w]=1;
+					tag_array[j][mindex_w]=tag;
 					number_of_evictions++;
 					number_of_cache_misses++;
 					$display($time,"MRU BIT ZERO LOCATION FILLED//%b",dirty[j][mindex_w]);
@@ -403,8 +404,8 @@ for(i=0;i<num_ways;i++)
 					number_of_writebacks++;
 					dirty[j][i]=0;
 					mru[j][i]=0;
+					break;
 				end
-			break;
 			end
 		end
 
